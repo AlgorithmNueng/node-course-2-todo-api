@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
@@ -65,6 +66,34 @@ app.delete('/todos/:id', (req, res) => {
     return res.status(400).send();
   });
 });
+
+// NOTE: Patch or Update
+app.patch('/todos/:id', (req, res) => {
+  var id = req.params.id;
+  var body = _.pick(req.body, ['text', 'completed']);
+  console.log(JSON.stringify(body, undefined, 2));
+
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send();
+  }
+
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime(); //return javascript timestamp
+  } else {
+    body.completed = false;
+    body.completedAt = null;
+  }
+
+  Todo.findByIdAndUpdate(id, { $set: body}, { new: true }).then((todo) => {
+    if (!todo) {
+      return res.status(404).send();
+    }
+    res.send({todo})
+  }).catch((e) => {
+    res.status(400).send();
+  });
+});
+
 
 // NOTE: Start Server in port 3000
 app.listen(port, () => {
